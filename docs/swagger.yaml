@@ -1,0 +1,23 @@
+basePath: /v2
+host: localhost:3000
+info:
+  contact:
+    email: whktjd0109@gmail.com
+  description: This is a sample server Petstore server.
+  termsOfService: http://swagger.io/terms/
+  title: Panorama Server APi
+  version: 1.0.0
+paths:
+  /accounts/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get entire Users Info
+      operationId: get-string-by-int
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Get User List
+swagger: "2.0"
