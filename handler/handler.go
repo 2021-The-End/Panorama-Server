@@ -1,56 +1,67 @@
 package handler
 
 import (
-	"fmt"
+	"panorama/server/model"
 
 	"github.com/gin-gonic/gin"
 )
 
-func indexHandler(c *gin.Context) {
-	fmt.Fprint(c.Writer, "index")
+type Success struct {
+	success bool
 }
 
-// getUsersListHandler godoc
-// @Summary Get User List
-// @Description Get entire Users Info
-// @ID get-string-by-int
-// @Accept  json
-// @Produce  json
-// @Success 200
-// @Router /users [get]
-func getUsersListHandler(c *gin.Context) {
-
+// Summary Signin
+// Router api/v1/signin [post]
+func (rh *RouterHandler) signinHandler(c *gin.Context) {
+	var user model.User
+	c.Bind(&user)
 }
 
-//getUserHandler
-// @Summary Get User Info
-// @Accept  json
-// @Produce  json
-// @Success 200
-// @Description Get entire Users Info
-// @Router /users/{id} [get]
-func getUserHandler(c *gin.Context) {
+// Summary Sign up
+// Router api/v1/signup [post]
+func (rh *RouterHandler) signupHandler(c *gin.Context) {
+	var user model.User
+	c.Bind(&user) //user
+	rh.md.HashPasswd(user.Passwd)
+	isuser := rh.md.IsUser(&user)
 
-}
-
-// createUsersHandler
-// @Summary Create User
-// @Description Get entire Users Info
-// @Accept  json
-// @Produce  json
-// @Success 200
-// @Router /users [post]
-func createUsersHandler(c *gin.Context) {
+	if isuser {
+		rh.db.AddUser(user.Name)
+	}
 
 }
 
-// updateUsersHandler
-// @Summary Create User
-// @Description Get entire Users Info
-// @Accept  json
-// @Produce  json
-// @Success 200
-// @Router /users/{id} [get]
-func updateUsersHandler(c *gin.Context) {
+// Summary upload img
+// Description Upload img to public folder to use fileserver
+// Router api/v1/post/img [get]
+func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 
+}
+
+// Summary get post contents
+// Router api/v1/post/content [post]
+func (rh *RouterHandler) getPostcontentsHandler(c *gin.Context) {
+
+}
+
+// Summary upload post
+// Router api/v1/post [post]
+func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
+
+}
+
+// Summary update post contents
+// Router api/v1/post [patch]
+func (rh *RouterHandler) updatePostHandler(c *gin.Context) {
+
+}
+
+// Summary delete img temporary
+// Router api/v1/img [delete]
+func (rh *RouterHandler) deleteImgHandler(c *gin.Context) {
+
+}
+
+func (rh *RouterHandler) Close() {
+	rh.db.Close()
 }
