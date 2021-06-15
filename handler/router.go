@@ -1,27 +1,40 @@
 package handler
 
 import (
-	_ "panorama/server/docs"
+	"panorama/server/model"
+	"panorama/server/utils"
 
 	"github.com/gin-gonic/gin"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
-func MakeHandler() *gin.Engine {
+type RouterHandler struct {
+	gin.Engine
+	db model.DBHandler
+	md utils.MiddleWare
+}
+
+func MakeHandler() *RouterHandler {
 	r := gin.Default()
+
+	rh := &RouterHandler{
+		Engine: *r,
+		db:     model.NewDBHandler(),
+	}
 
 	v1 := r.Group("/api/v1")
 	{
-		users := v1.Group("/users")
-		users.GET("", getUsersListHandler)
-		users.GET(":id", getUserHandler)
-		users.POST("", createUsersHandler)
-		users.PUT(":id", updateUsersHandler)
+		v1.POST("signup", rh.signupHandler)
+		v1.POST("signin", rh.signinHandler)
+		post := v1.Group("/post")
+		{
+			post.GET("img", rh.upLoadImgHandler)
+			post.DELETE("img", rh.deleteImgHandler)
 
+			post.POST("content", rh.getPostcontentsHandler)
+			post.PATCH("", rh.updatePostHandler)
+			post.POST("", rh.upLoadPostHandler) //contents 동시에 가져와야함
+		}
 	}
-	r.GET("/", indexHandler)
-	url := ginSwagger.URL("http://localhost:3000/swagger/doc.json")
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
-	return r
+
+	return rh
 }

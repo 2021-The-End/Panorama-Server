@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPort(t *testing.T) {
+func TestSwaggerHandler(t *testing.T) {
 	a := os.Getenv("PORT")
 	fmt.Println(a)
 	assert := assert.New(t)
