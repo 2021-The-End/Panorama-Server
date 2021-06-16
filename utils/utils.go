@@ -1,20 +1,24 @@
 package utils
 
 import (
-	"panorama/server/model"
+	"log"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type MiddleWare interface {
-	IsUser(*model.User) bool
-	HashPasswd(string) (string, ok bool)
+	HashPasswd(string) (string, error)
 	CompareHash(string string) bool
+	GetAccessToken() string
 }
 
-func HashPasswd(userpw string) string {
-	hashpw, _ := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
-	return string(hashpw)
+func HashPasswd(userpw string) (string, error) {
+	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
+	if err != nil {
+		log.Println(err.Error())
+		return "", err
+	}
+	return string(hashpw), nil
 }
 
 func CompareHash(hashpw, userpwd string) bool {
@@ -24,5 +28,9 @@ func CompareHash(hashpw, userpwd string) bool {
 	} else {
 		return true
 	}
+
+}
+
+func GetAccessToken() string {
 
 }
