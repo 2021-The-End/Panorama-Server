@@ -1,24 +1,56 @@
 package handler
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func TestSwaggerHandler(t *testing.T) {
-	a := os.Getenv("PORT")
-	fmt.Println(a)
-	assert := assert.New(t)
+func TestSigninHandler(t *testing.T) {
 
-	ah := MakeHandler()
-	ts := httptest.NewServer(ah)
+	router := MakeHandler()
 
-	_, err := http.Get(ts.URL + "/swagger/index.html")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/signup", strings.NewReader(`
+	{
+		"name":"junwoo",
+		"password":"1234",
+	}`))
+	router.Hh.ServeHTTP(w, req)
 
-	assert.NoError(err)
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, "sign up successfully", w.Body.String())
+
+}
+func TestSignupHandler(t *testing.T) {
+
+	router := MakeHandler()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/signup", strings.NewReader(`
+	{
+		"username":"a",
+		"password":"124"
+	}`))
+	router.Hh.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, "{\"msg\":\"sign up successfully\",\"statuscode\":201}", w.Body.String())
+}
+
+func TestNewPostgre(t *testing.T) {
+	dsn := "host=localhost user=postgres password=rlawnsdn6! dbname=panorama port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+
+		panic("failed to connect database")
+
+	}
+	log.Println(db)
 }
