@@ -17,7 +17,7 @@ func TestSigninHandler(t *testing.T) {
 	router := MakeHandler()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/v1/signup", strings.NewReader(`
+	req, _ := http.NewRequest("POST", "/api/v1/signin", strings.NewReader(`
 	{
 		"name":"junwoo",
 		"password":"1234",
@@ -25,7 +25,7 @@ func TestSigninHandler(t *testing.T) {
 	router.Hh.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, "sign up successfully", w.Body.String())
+	assert.Contains(t, "signin successfully", w.Body.String())
 
 }
 func TestSignupHandler(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSignupHandler(t *testing.T) {
 	router.Hh.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Contains(t, "{\"msg\":\"sign up successfully\",\"statuscode\":201}", w.Body.String())
+	assert.Contains(t, "{\"msg\":\"signup successfully\",\"statuscode\":201}", w.Body.String())
 }
 
 func TestNewPostgre(t *testing.T) {
