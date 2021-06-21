@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -53,4 +54,14 @@ func TestNewPostgre(t *testing.T) {
 
 	}
 	log.Println(db)
+}
+
+func TestUtils(t *testing.T) {
+	userpw := "12345"
+	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(hashpw), []byte(userpw))
+
 }
