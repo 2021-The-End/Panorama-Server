@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"log"
+	"panorama/server/utils"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -26,7 +27,7 @@ func NewPostgreHandler() DBHandler {
 
 //if value is not user, return false
 func (p *postgreHandler) SignupIsUser(user User) (bool, error) {
-	log.Println("call model/IsUser")
+	log.Println("call model/SignupIsUser")
 	result := user
 
 	result.CreatedAt = time.Now()
@@ -46,7 +47,29 @@ func (p *postgreHandler) SignupIsUser(user User) (bool, error) {
 	}
 }
 func (p *postgreHandler) SigninIsUser(user User) (bool, error) {
-	return false, nil
+	log.Println("call model/SigninIsUser")
+	result := &User{}
+
+	result.CreatedAt = time.Now()
+	result.UpdatedAt = time.Now()
+	// Get first matched record
+	if err := p.db.Where("username = ? AND password = ?", user.Username, user.Password).First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return true, err
+	} else {
+		if result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
+			passwdcompare := utils.CompareHash(result.Password, user.Username)
+			if !passwdcompare {
+				err = errors.New("Passwd is not match")
+				return true, err
+			}
+			return false, nil
+		} else {
+			return true, nil
+		}
+	}
 }
 func (p *postgreHandler) GetUser() *User {
 	return nil
