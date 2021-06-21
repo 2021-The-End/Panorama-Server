@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"panorama/server/handler"
 )
@@ -9,7 +10,7 @@ func main() {
 	port := os.Getenv("PORT")
 	rh := handler.MakeHandler()
 
-	rh.Close()
+	log.Print("Start App")
 
-	rh.Run(":" + port)
+	rh.Hh.Run(":" + port)
 }
