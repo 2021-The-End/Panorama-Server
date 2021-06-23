@@ -1,13 +1,22 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"errors"
+	"log"
+	"panorama/server/utils"
+	"time"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
 
 type postgreHandler struct {
 	db *gorm.DB
 }
 
 func NewPostgreHandler() DBHandler {
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=panorama sslmode=disable password=rlawnsdn6!")
+	dsn := "host=localhost user=postgres password=rlawnsdn6! dbname=panorama port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 
 		panic("failed to connect database")
@@ -16,12 +25,63 @@ func NewPostgreHandler() DBHandler {
 	return &postgreHandler{db: db}
 }
 
+//if value is not user, return false
+func (p *postgreHandler) SignupIsUser(user User) (bool, error) {
+	log.Println("call model/SignupIsUser")
+	result := user
+
+	result.CreatedAt = time.Now()
+	result.UpdatedAt = time.Now()
+	// Get first matched record
+	if err := p.db.Where("username = ?", result.Username).First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return true, err
+	} else {
+		if result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
+			return false, nil
+		} else {
+			return true, nil
+		}
+	}
+}
+func (p *postgreHandler) SigninIsUser(user User) (bool, error) {
+	log.Println("call model/SigninIsUser")
+	result := &User{}
+
+	result.CreatedAt = time.Now()
+	result.UpdatedAt = time.Now()
+	// Get first matched record
+	if err := p.db.Where("username = ? AND password = ?", user.Username, user.Password).First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return true, err
+	} else {
+		if result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
+			passwdcompare := utils.CompareHash(result.Password, user.Username)
+			if !passwdcompare {
+				err = errors.New("Passwd is not match")
+				return true, err
+			}
+			return false, nil
+		} else {
+			return true, nil
+		}
+	}
+}
 func (p *postgreHandler) GetUser() *User {
 	return nil
 }
 
-func (p *postgreHandler) AddUser(name string) *User {
-	p.db.DB().Prepare("UPDATE test1 ")
+func (p *postgreHandler) AddUser(user *User) error { //If json.UserName is not equal with db.username AddUser call
+	log.Print("call model/AddUser")
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+	if err := p.db.Omit("deleted_at").Create(&user).Error; err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -40,7 +100,6 @@ func (p *postgreHandler) DeleteImg() {
 
 }
 func (p *postgreHandler) Close() {
-	p.db.Close()
 }
 func (p *postgreHandler) UploadImg() {
 
