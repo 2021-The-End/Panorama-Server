@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"panorama/server/utils"
 	"strings"
 	"testing"
 
@@ -56,12 +58,44 @@ func TestNewPostgre(t *testing.T) {
 	log.Println(db)
 }
 
-func TestUtils(t *testing.T) {
+func TestHash(t *testing.T) {
 	userpw := "12345"
 	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
+	fmt.Println(hashpw, userpw)
 	if err != nil {
 		panic(err.Error())
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(hashpw), []byte(userpw))
+	fmt.Println(hashpw, userpw)
+	if err != nil {
+		fmt.Println("error", err)
+	} else {
+		fmt.Println("ok")
+	}
+}
 
+func TestVaildation(t *testing.T) {
+	router := MakeHandler()
+
+	w := httptest.NewRecorder()
+
+	ck, err := http.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
+		// For any other type of error, return a bad request status
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	response, err := utils.Validation(ck, client)
+	if err != nil {
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
+		return
+	}
+	sessionToken := ck
+	response := client.Get(sessionToken)
 }
