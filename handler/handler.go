@@ -1,52 +1,59 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"panorama/server/model"
-
 	"panorama/server/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
+var err error
+
 // Summary Signin
 // Router api/v1/signin [post]
 func (rh *RouterHandler) signinHandler(c *gin.Context) {
 	var user model.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Println(err)
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"statuscode": http.StatusUnprocessableEntity, "msg": "Invalid json provided" + err.Error()})
+	if err = c.ShouldBindJSON(&user); err != nil {
+		// If err occurs BINDING(ENCODING) user err, return serverError
+		utils.ThrowErr(c, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if user.Username == "" {
-		log.Println("username is empty")
-		c.JSON(http.StatusPartialContent, gin.H{"statuscode": http.StatusPartialContent, "msg": "username should be not null"})
+		// If binded username is empty, return partialcontent
+		err = errors.New("username is should'nt be empty")
+		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
 
 	isuser, err := rh.db.SigninIsUser(user)
 	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"statuscode": http.StatusInternalServerError, "msg": err.Error()})
+		// If err occurs in calling SignInIsUser, return ISE
+		utils.ThrowErr(c, http.StatusPartialContent, err)
+		return
 	}
 	if !isuser {
-		sessionkey, err := utils.GenerateSessionCookie(user, cache, c)
-
-		if err != nil {
-			log.Println("generate Cookie err")
-			c.JSON(http.StatusPartialContent, gin.H{"statuscode": http.StatusInternalServerError, "msg": err.Error()})
-			return
-		}
-
-		log.Println("successful signin")
-		c.JSON(http.StatusOK, gin.H{"statuscode": http.StatusOK, "msg": "signin successfully", "accesstoken": sessionkey})
-		return
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"statuscode": http.StatusUnauthorized, "msg": "Login Failed : User not Found"})
+		// If cant find User, return Unauthorized?
+		err = errors.New("user not Found")
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
+	err = utils.GenerateSessionCookie(user.Username, client, c)
+
+	if err != nil {
+		//If err occurs in generating sessioncookie, return ISE
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+	//Signin successfully
+	err = errors.New("login successfully")
+	utils.ThrowErr(c, http.StatusOK, err)
 }
 
 // Summary Sign up
@@ -56,74 +63,93 @@ func (rh *RouterHandler) signupHandler(c *gin.Context) {
 	var user model.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Println(err)
-		c.JSON(http.StatusOK, gin.H{"statuscode": http.StatusOK, "msg": "binding err " + err.Error()})
+		// If err occurs BINDING(ENCODING) user err, return serverError
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
 	if user.Username == "" {
-		log.Println("username is empty")
-		c.JSON(http.StatusPartialContent, gin.H{"statuscode": http.StatusPartialContent, "msg": "username should be not null"})
-	}
-	hashpwd, err := utils.EncrptPasswd(user.Password) //err json
-	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusOK, gin.H{"statuscode": http.StatusOK, "msg": "hashpwd exchanging err " + err.Error()})
+		// If binded username is empty, return partialcontent
+		err = errors.New("username is empty")
+		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
-
+	hashpwd, err := utils.EncrptPasswd(user.Password)
+	if err != nil {
+		//If err occurs in encrpt passwd, return ISE
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
 	user.Password = hashpwd
+
 	isuser, err := rh.db.SignupIsUser(user)
 	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusOK, gin.H{"statuscode": http.StatusOK, "msg": err.Error()})
+		//If err occurs in calling SignupIsUser, return ISE
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
 	if isuser {
-		log.Println("user alreay exist")
-		c.JSON(http.StatusOK, gin.H{"statuscode": http.StatusOK, "msg": "already exist user"})
+		//If user already exist, return partialcontent
+		err = errors.New("user alreay exist")
+		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 
-	} else {
-		err = rh.db.AddUser(&user)
-		if err != nil {
-			log.Println(err)
-			c.JSON(http.StatusCreated, gin.H{"statuscode": http.StatusCreated, "msg": "unable to add user"})
-			return
-		} else {
-			log.Println("successful signup")
-			c.JSON(http.StatusCreated, gin.H{"statuscode": http.StatusCreated, "msg": "signup successfully"})
-			return
-		}
 	}
+
+	err = rh.db.AddUser(&user)
+	if err != nil {
+		//If err occurs in Adding User, return partialcontent
+		utils.ThrowErr(c, http.StatusPartialContent, err)
+		return
+	}
+	//Signup successfully
+	err = errors.New("signup successfully")
+	utils.ThrowErr(c, http.StatusCreated, err)
 }
 
 // Summary upload img
 // Description Upload img to public folder to use fileserver
 // Router api/v1/post/img [get]
-func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
+func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) { //cookie
 	ck, err := c.Cookie("session_token")
 	if err != nil {
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			c.JSON(http.StatusUnauthorized, gin.H{"statuscode": http.StatusUnauthorized, "msg": "Cookie is Unavailable"})
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
 			return
 		}
 		// For any other type of error, return a bad request status
-		c.JSON(http.StatusBadRequest, gin.H{"statuscode": http.StatusBadRequest, "msg": "caused err to load cookie"})
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
-	sessionToken := ck
-	response, err := cache.Do("GET", sessionToken)
+
+	response, err := utils.Validation(ck, client)
 	if err != nil {
-		// If there is an error fetching from cache, return an internal server error status
-		c.JSON(http.StatusInternalServerError, gin.H{"statuscode": http.StatusInternalServerError, "msg": "caused cache err"})
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
-	if response == nil {
-		// If the session token is not present in cache, return an unauthorized error
-		c.JSON(http.StatusUnauthorized, gin.H{"statuscode": http.StatusUnauthorized})
+	response.Name()
+	//access token 검증-> 그 key인 username 가져오기
+	header, err := c.FormFile("upload_file")
+	uploadfile, _ := header.Open()
+	defer uploadfile.Close()
+	if err != nil {
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+	}
+
+	dirname := "./imgpath/"
+	os.MkdirAll(dirname, 0777)
+	filepath := fmt.Sprintf("%s/%s", "uploads", header.Filename)
+	file, err := os.Create(filepath)
+	defer file.Close()
+	if err != nil {
+		fmt.Fprint(c.Writer, err)
 		return
 	}
+	io.Copy(file, uploadfile)
+	c.Status(200)
+	fmt.Fprint(c.Writer, filepath)
+	c.Redirect(http.StatusTemporaryRedirect, "/public/index.html")
+
 }
 
 // Summary get post contents
@@ -152,4 +178,5 @@ func (rh *RouterHandler) deleteImgHandler(c *gin.Context) {
 
 func (rh *RouterHandler) Close() {
 	rh.db.Close()
+	client.Close()
 }
