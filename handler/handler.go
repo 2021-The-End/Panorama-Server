@@ -127,7 +127,6 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) { //cookie
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
-	response.Name()
 	//access token 검증-> 그 key인 username 가져오기
 	header, err := c.FormFile("upload_file")
 	uploadfile, _ := header.Open()
@@ -135,8 +134,7 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) { //cookie
 	if err != nil {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 	}
-
-	dirname := "./imgpath/"
+	dirname := "./imgpath/" + response
 	os.MkdirAll(dirname, 0777)
 	filepath := fmt.Sprintf("%s/%s", "uploads", header.Filename)
 	file, err := os.Create(filepath)
