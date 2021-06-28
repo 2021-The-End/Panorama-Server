@@ -6,6 +6,7 @@ require (
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/google/uuid v1.2.0 // indirect
