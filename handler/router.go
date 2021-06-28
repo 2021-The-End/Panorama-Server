@@ -2,32 +2,38 @@ package handler
 
 import (
 	"panorama/server/model"
-	"panorama/server/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 )
 
 type RouterHandler struct {
-	gin.Engine
+	Hh *gin.Engine
 	db model.DBHandler
-	md utils.MiddleWare
 }
+
+var client = redis.NewClient(&redis.Options{
+	Addr:     "localhost:6379",
+	Password: "",
+	DB:       0,
+})
 
 func MakeHandler() *RouterHandler {
 	r := gin.Default()
-
 	rh := &RouterHandler{
-		Engine: *r,
-		db:     model.NewDBHandler(),
+		Hh: r,
+		db: model.NewDBHandler(),
 	}
 
 	v1 := r.Group("/api/v1")
 	{
-		v1.POST("signup", rh.signupHandler)
-		v1.POST("signin", rh.signinHandler)
+		user := v1.Group("/user")
+		user.POST("signin", rh.signinHandler)
+		user.POST("signup", rh.signupHandler)
 		post := v1.Group("/post")
 		{
-			post.GET("img", rh.upLoadImgHandler)
+			post.POST("img", rh.upLoadImgHandler)
+			post.StaticFS("", gin.Dir("", true))
 			post.DELETE("img", rh.deleteImgHandler)
 
 			post.POST("content", rh.getPostcontentsHandler)
@@ -35,6 +41,5 @@ func MakeHandler() *RouterHandler {
 			post.POST("", rh.upLoadPostHandler) //contents 동시에 가져와야함
 		}
 	}
-
 	return rh
 }
