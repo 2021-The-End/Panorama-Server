@@ -36,7 +36,7 @@ func MakeHandler() *RouterHandler {
 			post.StaticFS("", gin.Dir("", true))
 			post.DELETE("img", rh.deleteImgHandler)
 
-			post.GET("content/:id", rh.getPostHandler)
+			post.GET(":id", rh.getPostHandler)
 			post.PATCH("", rh.updatePostHandler)
 			post.POST("", rh.upLoadPostHandler) //contents 동시에 가져와야함
 		}
