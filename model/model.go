@@ -22,8 +22,9 @@ in-memory에 넣을 것인지
 */
 type Post struct {
 	gorm.Model
-	Title  string `json:"title"`
-	Author string `json:"author"`
+	ProjectTitle string `json:"title"`
+	Author       string `json:"author"`
+	Summary      string `json:"summary"`
 
 	Contents  string    `json:"contents"`
 	Imgpaths  []Image   `json:"imgpaths"` //[{imgpaths:"Asd"},{imgpaths:"asdsa"}]
@@ -39,7 +40,7 @@ type DBHandler interface {
 	RemoveUser(string) error
 
 	UploadPost(*Post) error
-	GetPostContents() *Post
+	GetPost(postid int) *Post
 	ModifyPost(*Post)
 
 	Close()
