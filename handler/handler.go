@@ -2,11 +2,8 @@ package handler
 
 import (
 	"errors"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"panorama/server/model"
 	"panorama/server/utils"
 
@@ -109,7 +106,7 @@ func (rh *RouterHandler) signupHandler(c *gin.Context) {
 // Summary upload img
 // Description Upload img to public folder to use fileserver
 // Router api/v1/post/img [get]
-func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) { //cookie
+func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 	ck, err := c.Cookie("session_token")
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -123,30 +120,20 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) { //cookie
 	}
 
 	response, err := utils.Validation(ck, client)
-	if err != nil {
+	if response == "" {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
+	}
+	if err != nil {
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
-	//access token 검증-> 그 key인 username 가져오기
-	header, err := c.FormFile("upload_file")
-	uploadfile, _ := header.Open()
-	defer uploadfile.Close()
+
+	err = utils.UploadFile(c, response)
 	if err != nil {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 	}
-	dirname := "./imgpath/" + response
-	os.MkdirAll(dirname, 0777)
-	filepath := fmt.Sprintf("%s/%s", "uploads", header.Filename)
-	file, err := os.Create(filepath)
-	defer file.Close()
-	if err != nil {
-		fmt.Fprint(c.Writer, err)
-		return
-	}
-	io.Copy(file, uploadfile)
-	c.Status(200)
-	fmt.Fprint(c.Writer, filepath)
-	c.Redirect(http.StatusTemporaryRedirect, "/public/index.html")
+	err = errors.New("successfully Upload")
+	utils.ThrowErr(c, http.StatusOK, err)
 
 }
 
@@ -159,7 +146,40 @@ func (rh *RouterHandler) getPostcontentsHandler(c *gin.Context) {
 // Summary upload post
 // Router api/v1/post [post]
 func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
+	var post model.Post
 
+	ck, err := c.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
+		// For any other type of error, return a bad request status
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	response, err := utils.Validation(ck, client)
+	if response == "" {
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
+	}
+	if err != nil {
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := c.ShouldBindJSON(&post); err != nil {
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+	if post.Title == "" {
+		// If binded username is empty, return partialcontent
+		err = errors.New("post title empty")
+		utils.ThrowErr(c, http.StatusPartialContent, err)
+		return
+	}
+	rh.db.UploadPost(post)
 }
 
 // Summary update post contents
