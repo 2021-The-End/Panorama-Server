@@ -1,13 +1,17 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"panorama/server/model"
+	"os"
+
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,26 +35,67 @@ func CompareHash(hashpw, userpw string) bool {
 
 }
 
-func GenerateSessionCookie(user model.User, cache redis.Conn, c *gin.Context) (string, error) {
-	var result model.UserSession
-	result.User = user
+func IsexistAccessToken() bool {
+	return false
+}
 
-	result.SessionKey = uuid.New().String()
+func GenerateSessionCookie(username string, client *redis.Client, c *gin.Context) error {
+	SessionKey := uuid.New().String()
 	// Set the token in the cache, along with the user whom it represents
 	// The token has an expiry time of 120 seconds
-	_, err := cache.Do("SETEX", result.SessionKey, "120", result.User.Username)
+	log.Println(username)
+
+	err := client.Set(SessionKey, username, 1800*time.Second).Err()
+
 	if err != nil {
-		// If there is an error in setting the cache, return an internal server error
-		return "", err
+		return err
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "session_token",
-		Value:   result.SessionKey,
-		Expires: time.Now().Add(120 * time.Second),
+		Value:   SessionKey,
+		Expires: time.Now().Add(60 * time.Minute),
 	})
-	return result.SessionKey, nil
+	return nil
 }
 
-func IsexistAccessToken() bool {
-	return false
+func ThrowErr(c *gin.Context, statuscode int, err error) {
+	log.Println(err)
+	c.JSON(statuscode, gin.H{"statuscode": statuscode, "msg": err.Error()})
+}
+
+func Validation(sessionToken string, client *redis.Client) (string, error) {
+
+	response, err := client.Get(sessionToken).Result()
+	if response == "" {
+		// If the session token is not present in cache, return an unauthorized error
+		err := errors.New("session token is not present in cache")
+		return "", err
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
+func UploadFile(c *gin.Context, response string) error {
+	header, err := c.FormFile("upload_file")
+	uploadfile, _ := header.Open()
+	if err != nil {
+		return err
+	}
+	defer uploadfile.Close()
+
+	dirname := "./public/imgpath/" + response
+	os.MkdirAll(dirname, 0777)
+	filepath := fmt.Sprintf("%s/%s/%s", "public/imgpath", response, header.Filename) //imgpath/username/filename
+	file, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	io.Copy(file, uploadfile)
+
+	return nil
 }
