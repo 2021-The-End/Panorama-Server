@@ -53,19 +53,15 @@ func (p *postgreHandler) SigninIsUser(user User) (bool, error) {
 	result.CreatedAt = time.Now()
 	result.UpdatedAt = time.Now()
 	// Get first matched record
-	if err := p.db.Where("username = ? AND password = ?", user.Username, user.Password).First(&result).Error; err != nil {
+	if err := p.db.Where("username = ?", user.Username).First(&result).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil
+			return true, nil //false여야만 singin
 		}
-		return true, err
+		return false, err
 	} else {
-		if result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
-			passwdcompare := utils.CompareHash(result.Password, user.Username)
-			if !passwdcompare {
-				err = errors.New("Passwd is not match")
-				return true, err
-			}
-			return false, nil
+		if !utils.CompareHash(result.Password, user.Password) || result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
+			err = errors.New("id or Passwd is not match")
+			return false, err
 		} else {
 			return true, nil
 		}
@@ -79,19 +75,35 @@ func (p *postgreHandler) AddUser(user *User) error { //If json.UserName is not e
 	log.Print("call model/AddUser")
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	if err := p.db.Omit("deleted_at").Create(&user).Error; err != nil {
+	if err := p.db.Create(&user).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *postgreHandler) RemoveUser(id int) {
-
-}
-
-func (p *postgreHandler) GetPostContents() *Post {
+func (p *postgreHandler) RemoveUser(username string) error {
+	if err := p.db.Delete(&User{}, username).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
 	return nil
 }
+
+func (p *postgreHandler) GetPost() *Post {
+	return nil
+}
+func (p *postgreHandler) UploadPost(post *Post) error {
+	log.Print("call model/UploadPost")
+	post.CreatedAt = time.Now()
+	post.UpdatedAt = time.Now()
+	if err := p.db.Create(&post).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *postgreHandler) ModifyPost(*Post) {
 
 }
@@ -100,7 +112,4 @@ func (p *postgreHandler) DeleteImg() {
 
 }
 func (p *postgreHandler) Close() {
-}
-func (p *postgreHandler) UploadImg() {
-
 }
