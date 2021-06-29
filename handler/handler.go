@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"panorama/server/model"
 	"panorama/server/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -139,7 +140,32 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 
 // Summary get post contents
 // Router api/v1/post/content [post]
-func (rh *RouterHandler) getPostcontentsHandler(c *gin.Context) {
+func (rh *RouterHandler) getPostHandler(c *gin.Context) {
+	ck, err := c.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
+		// For any other type of error, return a bad request status
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	response, err := utils.Validation(ck, client)
+	if response == "" {
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
+	}
+	if err != nil {
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	id := c.Query("id")
+	postid, _ := strconv.Atoi(id)
+
+	rh.db.GetPost(postid)
 
 }
 
@@ -173,13 +199,13 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
-	if post.Title == "" {
+	if post.ProjectTitle == "" {
 		// If binded username is empty, return partialcontent
 		err = errors.New("post title empty")
 		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
-	rh.db.UploadPost(post)
+	rh.db.UploadPost(&post)
 }
 
 // Summary update post contents
