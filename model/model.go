@@ -40,7 +40,7 @@ type DBHandler interface {
 	RemoveUser(string) error
 
 	UploadPost(*Post) error
-	GetPost(postid int) *Post
+	GetPost(postid int) (*Post, error)
 	ModifyPost(*Post)
 
 	Close()
