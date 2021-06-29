@@ -20,12 +20,6 @@ Usersession에 expired까지 들어가야 하는 것
 db에 넣을 것인지
 in-memory에 넣을 것인지
 */
-
-type UserSession struct {
-	SessionKey string
-	User       User
-	Expired    time.Time
-}
 type Post struct {
 	gorm.Model
 	Title  string `json:"title"`
@@ -42,12 +36,15 @@ type Image struct {
 type DBHandler interface {
 	GetUser() *User
 	AddUser(*User) error
-	RemoveUser(id int)
+	RemoveUser(string) error
+
+	UploadPost(*Post) error
 	GetPostContents() *Post
 	ModifyPost(*Post)
+
 	Close()
+
 	DeleteImg()
-	UploadImg()
 
 	SignupIsUser(User) (bool, error)
 	SigninIsUser(User) (bool, error)
