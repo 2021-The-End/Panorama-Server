@@ -19,7 +19,7 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 	var user model.User
 	if err = c.ShouldBindJSON(&user); err != nil {
 		// If err occurs BINDING(ENCODING) user err, return serverError
-		utils.ThrowErr(c, http.StatusUnprocessableEntity, err)
+		utils.ThrowErr(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -42,7 +42,11 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
-	err = utils.GenerateSessionCookie(user.Username, client, c)
+	var httpwriter http.ResponseWriter
+
+	httpwriter = c.Writer
+
+	err = utils.GenerateSessionCookie(user.Username, client, httpwriter)
 
 	if err != nil {
 		//If err occurs in generating sessioncookie, return ISE
@@ -108,19 +112,8 @@ func (rh *RouterHandler) signupHandler(c *gin.Context) {
 // Description Upload img to public folder to use fileserver
 // Router api/v1/post/img [get]
 func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
-	ck, err := c.Cookie("session_token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			// If the cookie is not set, return an unauthorized status
-			utils.ThrowErr(c, http.StatusUnauthorized, err)
-			return
-		}
-		// For any other type of error, return a bad request status
-		utils.ThrowErr(c, http.StatusInternalServerError, err)
-		return
-	}
 
-	response, err := utils.Validation(ck, client)
+	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 	}
@@ -141,21 +134,7 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 // Summary get post contents
 // Router api/v1/post/content [post]
 func (rh *RouterHandler) getPostHandler(c *gin.Context) {
-	ck, err := c.Cookie("session_token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			// If the cookie is not set, return an unauthorized status
-			utils.ThrowErr(c, http.StatusUnauthorized, err)
-			return
-		}
-		// For any other type of error, return a bad request status
-		utils.ThrowErr(c, http.StatusInternalServerError, err)
-		return
-	}
 
-	response, err := utils.Validation(ck, client)
-	if response == "" {
-		utils.ThrowErr(c, http.StatusUnauthorized, err)
 	}
 	if err != nil {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
@@ -174,19 +153,7 @@ func (rh *RouterHandler) getPostHandler(c *gin.Context) {
 func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 	var post model.Post
 
-	ck, err := c.Cookie("session_token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			// If the cookie is not set, return an unauthorized status
-			utils.ThrowErr(c, http.StatusUnauthorized, err)
-			return
-		}
-		// For any other type of error, return a bad request status
-		utils.ThrowErr(c, http.StatusInternalServerError, err)
-		return
-	}
-
-	response, err := utils.Validation(ck, client)
+	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 	}
@@ -205,12 +172,13 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
+
 	rh.db.UploadPost(&post)
 }
 
 // Summary update post contents
 // Router api/v1/post [patch]
-func (rh *RouterHandler) updatePostHandler(c *gin.Context) {
+func (rh *RouterHandler) modifyPostHandler(c *gin.Context) {
 
 }
 
