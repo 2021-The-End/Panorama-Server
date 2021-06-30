@@ -134,7 +134,15 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 // Summary get post contents
 // Router api/v1/post/content [post]
 func (rh *RouterHandler) getPostHandler(c *gin.Context) {
-
+	
+	response, err := utils.Validation(c.Request, client)
+	if err == http.ErrNoCookie {
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
+		return
+	}
+	if response == "" {
+		utils.ThrowErr(c, http.StatusUnauthorized, err)
+		return
 	}
 	if err != nil {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
