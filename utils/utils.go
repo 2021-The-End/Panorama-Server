@@ -16,6 +16,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Utils interface {
+	EncrptPasswd(userpw string) (string, error)
+	CompareHash(hashpw, userpw string) bool
+	IsexistAccessToken() bool
+	GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error
+	ThrowErr(c *gin.Context, statuscode int, err error)
+	Validation(req *http.Request, client *redis.Client) (string, error)
+	UploadFile(c *gin.Context, response string) error
+}
+
+type Util struct {
+	Utils
+}
+
 func EncrptPasswd(userpw string) (string, error) {
 	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
 	if err != nil {
@@ -39,7 +53,7 @@ func IsexistAccessToken() bool {
 	return false
 }
 
-func GenerateSessionCookie(username string, client *redis.Client, c *gin.Context) error {
+func GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error {
 	SessionKey := uuid.New().String()
 	// Set the token in the cache, along with the user whom it represents
 	// The token has an expiry time of 120 seconds
@@ -50,7 +64,8 @@ func GenerateSessionCookie(username string, client *redis.Client, c *gin.Context
 	if err != nil {
 		return err
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
+
+	http.SetCookie(c, &http.Cookie{
 		Name:    "session_token",
 		Value:   SessionKey,
 		Expires: time.Now().Add(60 * time.Minute),
@@ -63,9 +78,17 @@ func ThrowErr(c *gin.Context, statuscode int, err error) {
 	c.JSON(statuscode, gin.H{"statuscode": statuscode, "msg": err.Error()})
 }
 
-func Validation(sessionToken string, client *redis.Client) (string, error) {
+func Validation(req *http.Request, client *redis.Client) (string, error) {
 
-	response, err := client.Get(sessionToken).Result()
+	sessionKey, err := req.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return "", err
+		}
+		// For any other type of error, return a bad request status
+		return "", err
+	}
+	response, err := client.Get(sessionKey.Value).Result()
 	if response == "" {
 		// If the session token is not present in cache, return an unauthorized error
 		err := errors.New("session token is not present in cache")
