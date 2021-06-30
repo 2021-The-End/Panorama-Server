@@ -181,7 +181,7 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		return
 	}
 	if len(post.Contents) < 20 {
-		err = errors.New("post contents len should long then 20")
+		err = errors.New("post contents len should belong then 20")
 		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
