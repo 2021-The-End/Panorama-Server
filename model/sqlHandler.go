@@ -91,9 +91,17 @@ func (p *postgreHandler) RemoveUser(username string) error {
 	return nil
 }
 
-func (p *postgreHandler) GetPost() *Post {
-	return nil
+func (p *postgreHandler) GetPost(postid int) (*Post, error) {
+	result := &Post{}
+	if err := p.db.Where("post_id = ?", postid).First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return result, nil
 }
+
 func (p *postgreHandler) UploadPost(post *Post) error {
 	log.Print("call model/UploadPost")
 	post.CreatedAt = time.Now()

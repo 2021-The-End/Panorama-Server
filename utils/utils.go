@@ -26,10 +26,6 @@ type Utils interface {
 	UploadFile(c *gin.Context, response string) error
 }
 
-type Util struct {
-	Utils
-}
-
 func EncrptPasswd(userpw string) (string, error) {
 	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
 	if err != nil {

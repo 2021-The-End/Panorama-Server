@@ -37,7 +37,7 @@ func MakeHandler() *RouterHandler {
 			post.DELETE("img", rh.deleteImgHandler)
 
 			post.GET(":id", rh.getPostHandler)
-			post.PATCH("", rh.updatePostHandler)
+			post.PATCH("", rh.modifyPostHandler)
 			post.POST("", rh.upLoadPostHandler) //contents 동시에 가져와야함
 		}
 	}
