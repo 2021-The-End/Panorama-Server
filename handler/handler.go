@@ -135,14 +135,6 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 // Router api/v1/post/content [post]
 func (rh *RouterHandler) getPostHandler(c *gin.Context) {
 
-	response, err := utils.Validation(c.Request, client)
-	if err == http.ErrNoCookie {
-		utils.ThrowErr(c, http.StatusUnauthorized, err)
-		return
-	}
-	if response == "" {
-		utils.ThrowErr(c, http.StatusUnauthorized, err)
-		return
 	}
 	if err != nil {
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
@@ -180,11 +172,7 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
-	if len(post.Contents) < 20 {
-		err = errors.New("post contents len should long then 20")
-		utils.ThrowErr(c, http.StatusPartialContent, err)
-		return
-	}
+
 	rh.db.UploadPost(&post)
 }
 
