@@ -13,9 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
@@ -32,6 +30,10 @@ func TestSigninHandler(t *testing.T) {
 		"name":"junwoo",
 		"password":"1234",
 	}`))
+	response, err := utils.Validation(req, client)
+	if response != "" {
+
+	}
 	router.Hh.ServeHTTP(w, req)
 
 	username := "junwoo"
@@ -39,25 +41,11 @@ func TestSigninHandler(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, "signin successfully", w.Body.String())
 
-	SessionKey := uuid.New().String()
-	// Set the token in the cache, along with the user whom it represents
-	// The token has an expiry time of 120 seconds
-	log.Println(username)
-
-	err := client.Set(SessionKey, username, 1800*time.Second).Err()
+	err = utils.GenerateSessionCookie(username, client, w)
 	assert.NoError(t, err)
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
-		Value:   SessionKey,
-		Expires: time.Now().Add(60 * time.Minute),
-	})
-	ck, err := req.Cookie("session_token")
+	response, err = utils.Validation(req, client)
 	assert.NoError(t, err)
-
-	response, err := utils.Validation(ck.Value, client)
-	assert.NoError(t, err)
-
 	assert.NotNil(t, response)
 
 }
