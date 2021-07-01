@@ -140,6 +140,7 @@ func (rh *RouterHandler) getPostHandler(c *gin.Context) {
 	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
+		return
 	}
 	if err != nil {
 		if err == http.ErrNoCookie {
