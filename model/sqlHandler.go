@@ -81,6 +81,17 @@ func (p *postgreHandler) AddUser(user *User) error { //If json.UserName is not e
 	return nil
 }
 
+func (p *postgreHandler) GetPost() (*[]Post, error) {
+	post := &[]Post{}
+	if err := p.db.Find(&post).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return post, nil
+}
+
 func (p *postgreHandler) RemoveUser(username string) error {
 	if err := p.db.Delete(&User{}, username).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -91,7 +102,7 @@ func (p *postgreHandler) RemoveUser(username string) error {
 	return nil
 }
 
-func (p *postgreHandler) GetPost(postid int) (*Post, error) {
+func (p *postgreHandler) GetbyIdPost(postid int) (*Post, error) {
 	result := &Post{}
 	if err := p.db.Where("post_id = ?", postid).First(&result).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
