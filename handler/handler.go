@@ -42,9 +42,7 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
-	var httpwriter http.ResponseWriter
-
-	httpwriter = c.Writer
+	var httpwriter http.ResponseWriter = c.Writer
 
 	err = utils.GenerateSessionCookie(user.Username, client, httpwriter)
 
@@ -118,6 +116,10 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 	}
 	if err != nil {
+		if err == http.ErrNoCookie {
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -132,19 +134,19 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 }
 
 // Summary get post contents
-// Router api/v1/post/content [post]
+// Router api/v1/post/content [get]
 func (rh *RouterHandler) getPostHandler(c *gin.Context) {
-	
+
 	response, err := utils.Validation(c.Request, client)
-	if err == http.ErrNoCookie {
-		utils.ThrowErr(c, http.StatusUnauthorized, err)
-		return
-	}
 	if response == "" {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 		return
 	}
 	if err != nil {
+		if err == http.ErrNoCookie {
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -152,8 +154,23 @@ func (rh *RouterHandler) getPostHandler(c *gin.Context) {
 	id := c.Query("id")
 	postid, _ := strconv.Atoi(id)
 
-	rh.db.GetPost(postid)
+	post, err := rh.db.GetbyIdPost(postid)
 
+	log.Println(post)
+
+}
+
+func (rh *RouterHandler) getEntirePostHandler(c *gin.Context) {
+	posts, err := rh.db.GetPost()
+	if err != nil {
+		if posts != nil {
+			errors.New("empty contents")
+			utils.ThrowErr(c, http.StatusPartialContent, err)
+		}
+		utils.ThrowErr(c, http.StatusInternalServerError, err)
+	}
+	posts.
+		c.JSON(200, gin.H{})
 }
 
 // Summary upload post
@@ -166,6 +183,10 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusUnauthorized, err)
 	}
 	if err != nil {
+		if err == http.ErrNoCookie {
+			utils.ThrowErr(c, http.StatusUnauthorized, err)
+			return
+		}
 		utils.ThrowErr(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -180,7 +201,11 @@ func (rh *RouterHandler) upLoadPostHandler(c *gin.Context) {
 		utils.ThrowErr(c, http.StatusPartialContent, err)
 		return
 	}
-
+	if len(post.Contents) < 20 {
+		err = errors.New("post contents len should belong then 20")
+		utils.ThrowErr(c, http.StatusPartialContent, err)
+		return
+	}
 	rh.db.UploadPost(&post)
 }
 
