@@ -32,15 +32,24 @@ func MakeHandler() *RouterHandler {
 		user.POST("signup", rh.signupHandler)
 		post := v1.Group("/post")
 		{
-			post.POST("img", rh.upLoadImgHandler)
-			post.StaticFS("", gin.Dir("", true))
-			post.DELETE("img", rh.deleteImgHandler)
-
-			post.GET(":id", rh.getPostHandler)
-			post.GET("", rh.getEntirePostHandler)
-			post.PATCH("", rh.modifyPostHandler)
-			post.POST("", rh.upLoadPostHandler) //contents 동시에 가져와야함
+			img := post.Group("/img")
+			{
+				img.POST("upload", rh.upLoadImgHandler)
+				img.StaticFS("", gin.Dir("", true))
+				img.DELETE("", rh.deleteImgHandler)
+			}
+			post.GET("/rating", rh.reviewHandler)
+			post.GET(":id", rh.getProjectByIdHandler)
+			post.GET("", rh.getEntireProjectHandler)
+			post.PATCH(":id", rh.modifyProjectHandler)
+			post.POST("", rh.upLoadProjectHandler) //contents 동시에 가져와야함
 		}
+		comment := v1.Group("/comment")
+		{
+			comment.POST("", rh.uploadCommentHandler)
+			comment.GET(":id", rh.getCommentHandler)
+		}
+
 	}
 	return rh
 }
