@@ -37,10 +37,10 @@ func EncrptPasswd(userpw string) (string, error) {
 
 func CompareHash(hashpw, userpw string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashpw), []byte(userpw))
-	if err != nil {
-		return false
-	} else {
+	if err == nil {
 		return true
+	} else {
+		return false
 	}
 
 }
@@ -69,17 +69,12 @@ func GenerateSessionCookie(username string, client *redis.Client, c http.Respons
 	return nil
 }
 
-func ThrowErr(c *gin.Context, statuscode int, err error) {
-	log.Println(err)
-	c.JSON(statuscode, gin.H{"statuscode": statuscode, "msg": err.Error()})
-}
-
 func Validation(req *http.Request, client *redis.Client) (string, error) {
 
 	sessionKey, err := req.Cookie("session_token")
 	if err != nil {
 		if err == http.ErrNoCookie {
-			return "", err
+			return "", nil
 		}
 		// For any other type of error, return a bad request status
 		return "", err
