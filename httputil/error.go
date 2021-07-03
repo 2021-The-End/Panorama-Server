@@ -1,10 +1,12 @@
-package main
+package httputil
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type HTTPError struct {
-	Code    int    `json:"statuscode" example:"400"`
-	Message string `json:"error" example:"bad request"`
+	Code    int    `json:"statuscode"`
+	Message string `json:"error"`
 }
 
 // NewError example
