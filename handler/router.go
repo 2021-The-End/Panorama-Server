@@ -30,7 +30,8 @@ func MakeHandler() *RouterHandler {
 		user := v1.Group("/user")
 		user.POST("signin", rh.signinHandler)
 		user.POST("signup", rh.signupHandler)
-		post := v1.Group("/post")
+		user.GET("signout", rh.signoutHandler)
+		post := v1.Group("/project")
 		{
 			img := post.Group("/img")
 			{
@@ -38,7 +39,6 @@ func MakeHandler() *RouterHandler {
 				img.StaticFS("", gin.Dir("", true))
 				img.DELETE("", rh.deleteImgHandler)
 			}
-			post.GET("/rating", rh.reviewHandler)
 			post.GET(":id", rh.getProjectByIdHandler)
 			post.GET("", rh.getEntireProjectHandler)
 			post.PATCH(":id", rh.modifyProjectHandler)

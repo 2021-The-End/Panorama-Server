@@ -6,7 +6,7 @@ import (
 
 type HTTPError struct {
 	Code    int    `json:"statuscode"`
-	Message string `json:"error"`
+	Message string `json:"msg"`
 }
 
 // NewError example
