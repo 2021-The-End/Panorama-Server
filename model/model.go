@@ -31,7 +31,7 @@ type JSONProjectCon struct {
 	Contents string   `json:"contents"`
 	Imgpaths []string `json:"imgpaths"`
 }
-type ProjectCon struct {
+type Projectcon struct {
 	*gorm.Model
 	Title    string   `json:"title"`
 	Creaters []string `json:"creaters"`
@@ -51,9 +51,9 @@ type DBHandler interface {
 	AddUser(*User) error
 	RemoveUser(string) error
 
-	UploadPost(*ProjectCon) error
-	GetbyIdPost(postid int) (*ProjectCon, error)
-	ModifyPost(*ProjectCon)
+	UploadPost(*Projectcon) error
+	GetbyIdPost(postid int) (*Projectcon, error)
+	ModifyPost(*Projectcon)
 	GetPost() (*[]ProjectSum, error)
 
 	Close()
