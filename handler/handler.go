@@ -23,44 +23,54 @@ var err error
 // @Router /user/signin [post]
 func (rh *RouterHandler) signinHandler(c *gin.Context) {
 
-	var user model.User
-	if err = c.ShouldBindJSON(&user); err != nil {
-		// If err occurs BINDING(ENCODING) user err, return serverError
-		httputil.NewError(c, http.StatusBadRequest, err)
+	havcookie, err := utils.SigninValidation(c.Request, client)
+	if err != nil {
+		httputil.NewError(c, http.StatusInternalServerError, err)
 		return
 	}
+	if !havcookie {
+		var user model.User
+		if err = c.ShouldBindJSON(&user); err != nil {
+			// If err occurs BINDING(ENCODING) user err, return serverError
+			httputil.NewError(c, http.StatusBadRequest, err)
+			return
+		}
 
-	if user.Username == "" {
-		// If binded username is empty, return partialcontent
-		err = errors.New("username is should'nt be empty")
+		if user.Username == "" {
+			// If binded username is empty, return partialcontent
+			err = errors.New("username is should'nt be empty")
+			httputil.NewError(c, http.StatusPartialContent, err)
+			return
+		}
+
+		isuser, err := rh.db.SigninIsUser(user)
+		if err != nil {
+			// If err occurs in calling SignInIsUser, return ISE
+			httputil.NewError(c, http.StatusInternalServerError, err)
+			return
+		}
+		if !isuser {
+			// If cant find User, return Unauthorized
+			err = errors.New("user not Found")
+			httputil.NewError(c, http.StatusUnauthorized, err)
+			return
+		}
+		var httpwriter http.ResponseWriter = c.Writer
+
+		err = utils.GenerateSessionCookie(user.Username, client, httpwriter)
+
+		if err != nil {
+			//If err occurs in generating sessioncookie, return ISE
+			httputil.NewError(c, http.StatusInternalServerError, err)
+			return
+		}
+		//Signin successfully
+		err = errors.New("login successfully")
+		httputil.NewError(c, http.StatusOK, err)
+	} else {
+		err = errors.New("already have cookie")
 		httputil.NewError(c, http.StatusPartialContent, err)
-		return
 	}
-
-	isuser, err := rh.db.SigninIsUser(user)
-	if err != nil {
-		// If err occurs in calling SignInIsUser, return ISE
-		httputil.NewError(c, http.StatusInternalServerError, err)
-		return
-	}
-	if !isuser {
-		// If cant find User, return Unauthorized
-		err = errors.New("user not Found")
-		httputil.NewError(c, http.StatusUnauthorized, err)
-		return
-	}
-	var httpwriter http.ResponseWriter = c.Writer
-
-	err = utils.GenerateSessionCookie(user.Username, client, httpwriter)
-
-	if err != nil {
-		//If err occurs in generating sessioncookie, return ISE
-		httputil.NewError(c, http.StatusInternalServerError, err)
-		return
-	}
-	//Signin successfully
-	err = errors.New("login successfully")
-	httputil.NewError(c, http.StatusOK, err)
 
 }
 
@@ -119,6 +129,11 @@ func (rh *RouterHandler) signupHandler(c *gin.Context) {
 	httputil.NewError(c, http.StatusCreated, err)
 }
 
+func (rh *RouterHandler) signoutHandler(c *gin.Context) {
+	utils.ClearSession(c.Writer)
+	c.Redirect(302, "/")
+}
+
 // uploadImg godoc
 // @Summary UploadImg
 // @Description Upload Img using fileServer
@@ -131,6 +146,7 @@ func (rh *RouterHandler) upLoadImgHandler(c *gin.Context) {
 	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		httputil.NewError(c, http.StatusUnauthorized, err)
+		return
 	}
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -170,14 +186,16 @@ func (rh *RouterHandler) deleteImgHandler(c *gin.Context) {
 // @Produce  json
 // @Router /post [post]
 func (rh *RouterHandler) upLoadProjectHandler(c *gin.Context) {
-	var post model.Project
+	var project model.Projectcon
 
 	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		httputil.NewError(c, http.StatusUnauthorized, err)
+		return
 	}
 	if err != nil {
 		if err == http.ErrNoCookie {
+			log.Println("no ErrNoCookie")
 			httputil.NewError(c, http.StatusUnauthorized, err)
 			return
 		}
@@ -185,22 +203,29 @@ func (rh *RouterHandler) upLoadProjectHandler(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&post); err != nil {
+	if err := c.ShouldBindJSON(&project); err != nil {
 		httputil.NewError(c, http.StatusInternalServerError, err)
 		return
 	}
-	if post.ProjectTitle == "" {
+	if project.Title == "" {
 		// If binded username is empty, return partialcontent
 		err = errors.New("post title empty")
 		httputil.NewError(c, http.StatusPartialContent, err)
 		return
 	}
-	if len(post.Contents) < 20 {
+	if len(project.Contents) < 20 {
 		err = errors.New("post contents len should belong then 20")
 		httputil.NewError(c, http.StatusPartialContent, err)
 		return
 	}
-	rh.db.UploadPost(&post)
+	log.Println(project)
+	err = rh.db.UploadPost(&project)
+	if err != nil {
+		httputil.NewError(c, http.StatusInternalServerError, err)
+		return
+	}
+	err = errors.New("upload project successfully")
+	httputil.NewError(c, http.StatusOK, err)
 }
 
 // ModifyPost godoc
@@ -222,7 +247,6 @@ func (rh *RouterHandler) modifyProjectHandler(c *gin.Context) {
 // @Produce  json
 // @Router /post/:id [get]
 func (rh *RouterHandler) getProjectByIdHandler(c *gin.Context) {
-
 	response, err := utils.Validation(c.Request, client)
 	if response == "" {
 		httputil.NewError(c, http.StatusUnauthorized, err)
@@ -237,11 +261,11 @@ func (rh *RouterHandler) getProjectByIdHandler(c *gin.Context) {
 		return
 	}
 
-	id := c.Query("id")
+	id := c.Param("id")
 	postid, _ := strconv.Atoi(id)
 
+	log.Println(postid)
 	post, err := rh.db.GetbyIdPost(postid)
-
 	if err != nil {
 		httputil.NewError(c, http.StatusInternalServerError, err)
 		return
@@ -251,11 +275,7 @@ func (rh *RouterHandler) getProjectByIdHandler(c *gin.Context) {
 	// for idx, value := range post.Imgpaths {
 
 	// }
-	c.JSON(200, post)
-
-}
-
-func (rh *RouterHandler) reviewHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, post)
 
 }
 
@@ -279,6 +299,7 @@ func (rh *RouterHandler) getEntireProjectHandler(c *gin.Context) {
 	// for i := 0; i < posts[i]/2; i++ {
 	// 	posts[i]
 	// }
+	c.JSON(http.StatusOK, posts)
 
 }
 
