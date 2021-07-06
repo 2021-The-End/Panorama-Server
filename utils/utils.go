@@ -19,13 +19,21 @@ import (
 type Utils interface {
 	EncrptPasswd(userpw string) (string, error)
 	CompareHash(hashpw, userpw string) bool
-	IsexistAccessToken() bool
 	GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error
 	ThrowErr(c *gin.Context, statuscode int, err error)
 	Validation(req *http.Request, client *redis.Client) (string, error)
 	UploadFile(c *gin.Context, response string) error
 }
 
+func ClearSession(c http.ResponseWriter) {
+	cookie := &http.Cookie{
+		Name:   "session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	}
+	http.SetCookie(c, cookie)
+}
 func EncrptPasswd(userpw string) (string, error) {
 	hashpw, err := bcrypt.GenerateFromPassword([]byte(userpw), bcrypt.DefaultCost)
 	if err != nil {
@@ -45,10 +53,6 @@ func CompareHash(hashpw, userpw string) bool {
 
 }
 
-func IsexistAccessToken() bool {
-	return false
-}
-
 func GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error {
 	SessionKey := uuid.New().String()
 	// Set the token in the cache, along with the user whom it represents
@@ -62,19 +66,42 @@ func GenerateSessionCookie(username string, client *redis.Client, c http.Respons
 	}
 
 	http.SetCookie(c, &http.Cookie{
-		Name:    "session_token",
+		Name:    "session_id",
 		Value:   SessionKey,
 		Expires: time.Now().Add(60 * time.Minute),
+		Path:    "/",
 	})
 	return nil
 }
 
-func Validation(req *http.Request, client *redis.Client) (string, error) {
+//if result is true, create cookie
+func SigninValidation(req *http.Request, client *redis.Client) (bool, error) {
 
-	sessionKey, err := req.Cookie("session_token")
+	sessionKey, err := req.Cookie("session_id")
 	if err != nil {
 		if err == http.ErrNoCookie {
-			return "", nil
+			return false, nil
+		}
+		// For any other type of error, return a bad request status
+		return true, err
+	}
+	response, err := client.Get(sessionKey.Value).Result()
+	if response == "" {
+		// If the session token is not present in cache, return an unauthorized error
+		return false, nil
+	}
+	if err != nil {
+		return true, err
+	}
+
+	return true, nil
+}
+func Validation(req *http.Request, client *redis.Client) (string, error) {
+
+	sessionKey, err := req.Cookie("session_id")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return "", err
 		}
 		// For any other type of error, return a bad request status
 		return "", err
