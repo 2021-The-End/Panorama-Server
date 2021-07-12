@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -32,7 +34,9 @@ type JSONProjectCon struct {
 	Imgpaths []string `json:"imgpaths"`
 }
 type Projectcon struct {
-	*gorm.Model
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
 	Title    string   `json:"title"`
 	Creaters []string `json:"creaters"`
 	Grade    int      `json:"grade"`
