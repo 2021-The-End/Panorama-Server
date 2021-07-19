@@ -46,6 +46,9 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 		isuser, err := rh.db.SigninIsUser(user)
 		if err != nil {
 			// If err occurs in calling SignInIsUser, return ISE
+			if err == errors.New("record not found") {
+				httputil.NewError(c, http.StatusBadRequest, err)
+			}
 			httputil.NewError(c, http.StatusInternalServerError, err)
 			return
 		}
@@ -325,6 +328,10 @@ func (rh *RouterHandler) uploadCommentHandler(c *gin.Context) {
 // @Produce  json
 // @Router /comment/:postid [get]
 func (rh *RouterHandler) getCommentHandler(c *gin.Context) {
+
+}
+
+func (rh *RouterHandler) deleteUserHandler(c *gin.Context) {
 
 }
 

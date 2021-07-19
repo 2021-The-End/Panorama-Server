@@ -8,7 +8,7 @@ import (
 	"panorama/server/utils"
 	"time"
 
-	"panorama/server/dbinfo"
+	info "panorama/server/info"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -21,18 +21,15 @@ type postgreHandler struct {
 	ormdb *gorm.DB
 }
 
-var dsn = fmt.Sprintf("host=%s port=%d user=%s "+
+var dsn = fmt.Sprintf("host=%s user=%s "+
 	"password=%s dbname=%s sslmode=disable",
-	dbinfo.Host, dbinfo.Port, dbinfo.User, dbinfo.Password, dbinfo.Dbname)
+	info.DBHost, info.User, info.Password, info.Dbname)
 
 func NewPostgreHandler() DBHandler {
 	sqldb, err := sql.Open("postgres", dsn)
 	if err != nil {
 		panic("failed to connect sql database")
 	}
-	dsn := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		dbinfo.Host, dbinfo.Port, dbinfo.User, dbinfo.Password, dbinfo.Dbname)
 	ormdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -67,6 +64,9 @@ func (p *postgreHandler) SigninIsUser(user User) (bool, error) {
 
 	// Get first matched record
 	if err := p.ormdb.Where("username = ?", user.Username).First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, err
 	} else {
 		if !utils.CompareHash(result.Password, user.Password) || result.Username != user.Username { //db에 있는 username이 json으로 받은 username과 달라야 false 리턴
@@ -92,6 +92,7 @@ func (p *postgreHandler) AddUser(user *User) error { //If json.UserName is not e
 
 func (p *postgreHandler) GetPost() (*[]ProjectSum, error) {
 	post := &[]ProjectSum{}
+
 	if err := p.ormdb.Find(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -115,8 +116,8 @@ func (p *postgreHandler) GetbyIdPost(projectid int) (*Projectcon, error) {
 	Projectcon := &Projectcon{}
 	var img []string
 	var cre []string
-	selImgQuery := dbinfo.SelImgpathQuery
-	selCreQuery := dbinfo.SelCreaterQuery
+	selImgQuery := info.SelImgpathQuery
+	selCreQuery := info.SelCreaterQuery
 
 	err := p.sqldb.QueryRow(selImgQuery, projectid).Scan(pq.Array(&img))
 	if err != nil {
@@ -144,7 +145,7 @@ func (p *postgreHandler) UploadPost(Projectcon *Projectcon) error {
 	Projectcon.CreatedAt = time.Now()
 	Projectcon.UpdatedAt = time.Now()
 
-	insQuery := dbinfo.InsQuery
+	insQuery := info.InsQuery
 	_, err := p.sqldb.Exec(insQuery, Projectcon.Title, Projectcon.Contents,
 		pq.Array(Projectcon.Creaters), pq.Array(Projectcon.Imgpaths), Projectcon.Summary, Projectcon.Grade, Projectcon.CreatedAt, Projectcon.UpdatedAt)
 
