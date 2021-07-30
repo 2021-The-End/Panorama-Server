@@ -30,6 +30,7 @@ func MakeHandler() *RouterHandler {
 		user := v1.Group("/user")
 		user.POST("signin", rh.signinHandler)
 		user.POST("signup", rh.signupHandler)
+		user.DELETE("", rh.deleteUserHandler)
 		user.GET("signout", rh.signoutHandler)
 		post := v1.Group("/project")
 		{

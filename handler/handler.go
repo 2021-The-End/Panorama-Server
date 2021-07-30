@@ -46,6 +46,9 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 		isuser, err := rh.db.SigninIsUser(user)
 		if err != nil {
 			// If err occurs in calling SignInIsUser, return ISE
+			if err == errors.New("record not found") {
+				httputil.NewError(c, http.StatusBadRequest, err)
+			}
 			httputil.NewError(c, http.StatusInternalServerError, err)
 			return
 		}
@@ -236,7 +239,43 @@ func (rh *RouterHandler) upLoadProjectHandler(c *gin.Context) {
 // @Produce  json
 // @Router /post/:id [patch]
 func (rh *RouterHandler) modifyProjectHandler(c *gin.Context) {
-
+	var project model.JSONProjectCon
+	response, err := utils.Validation(c.Request, client)
+	if response == "" {
+		httputil.NewError(c, http.StatusUnauthorized, err)
+		return
+	}
+	if err != nil {
+		if err == http.ErrNoCookie {
+			log.Println("no ErrNoCookie")
+			httputil.NewError(c, http.StatusUnauthorized, err)
+			return
+		}
+		httputil.NewError(c, http.StatusInternalServerError, err)
+		return
+	}
+	if err := c.ShouldBindJSON(&project); err != nil {
+		httputil.NewError(c, http.StatusInternalServerError, err)
+		return
+	}
+	if project.Title == "" {
+		// If binded username is empty, return partialcontent
+		err = errors.New("post title empty")
+		httputil.NewError(c, http.StatusPartialContent, err)
+		return
+	}
+	if len(project.Contents) < 20 {
+		err = errors.New("post contents len should belong then 20")
+		httputil.NewError(c, http.StatusPartialContent, err)
+		return
+	}
+	err = rh.db.ModifyPost(&project)
+	if err != nil {
+		httputil.NewError(c, http.StatusInternalServerError, err)
+		return
+	}
+	err = errors.New("upload project successfully")
+	httputil.NewError(c, http.StatusOK, err)
 }
 
 // GetPost godoc
@@ -325,6 +364,10 @@ func (rh *RouterHandler) uploadCommentHandler(c *gin.Context) {
 // @Produce  json
 // @Router /comment/:postid [get]
 func (rh *RouterHandler) getCommentHandler(c *gin.Context) {
+
+}
+
+func (rh *RouterHandler) deleteUserHandler(c *gin.Context) {
 
 }
 

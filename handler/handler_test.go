@@ -31,23 +31,22 @@ func TestSigninHandler(t *testing.T) {
 		"password":"1234",
 	}`))
 	response, err := utils.Validation(req, client)
-	if response != "" {
+	if response == "" {
+		assert.NoError(t, err)
+		router.Hh.ServeHTTP(w, req)
 
+		username := "junwoo"
+
+		assert.Equal(t, 200, w.Code)
+		assert.Contains(t, "signin successfully", w.Body.String())
+
+		err = utils.GenerateSessionCookie(username, client, w)
+		assert.NoError(t, err)
+
+		response, err = utils.Validation(req, client)
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
 	}
-	router.Hh.ServeHTTP(w, req)
-
-	username := "junwoo"
-
-	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, "signin successfully", w.Body.String())
-
-	err = utils.GenerateSessionCookie(username, client, w)
-	assert.NoError(t, err)
-
-	response, err = utils.Validation(req, client)
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-
 }
 func TestSignupHandler(t *testing.T) {
 
