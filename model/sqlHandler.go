@@ -8,7 +8,7 @@ import (
 	"panorama/server/utils"
 	"time"
 
-	info "panorama/server/info"
+	"panorama/server/info"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -155,8 +155,12 @@ func (p *postgreHandler) UploadPost(Projectcon *Projectcon) error {
 	return nil
 }
 
-func (p *postgreHandler) ModifyPost(*Projectcon) {
-
+func (p *postgreHandler) ModifyPost(ProjectCon *JSONProjectCon) error {
+	log.Print("call model/ModifyPost")
+	if err := p.ormdb.Model(&ProjectCon).Where("id = ?", ProjectCon.ID).Updates(&ProjectCon).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *postgreHandler) DeleteImg() {

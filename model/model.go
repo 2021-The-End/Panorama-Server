@@ -57,7 +57,7 @@ type DBHandler interface {
 
 	UploadPost(*Projectcon) error
 	GetbyIdPost(postid int) (*Projectcon, error)
-	ModifyPost(*Projectcon)
+	ModifyPost(ProjectCon *JSONProjectCon) error
 	GetPost() (*[]ProjectSum, error)
 
 	Close()
