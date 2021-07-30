@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"panorama/server/info"
 	"panorama/server/model"
 
 	"github.com/gin-gonic/gin"
@@ -13,8 +14,8 @@ type RouterHandler struct {
 }
 
 var client = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
-	Password: "",
+	Addr:     info.RedisHost,
+	Password: info.RedisPass,
 	DB:       0,
 })
 
