@@ -25,6 +25,7 @@ func MakeHandler() *RouterHandler {
 		Hh: r,
 		db: model.NewDBHandler(),
 	}
+	r.Use(CORSMiddleware())
 
 	v1 := r.Group("/api/v1")
 	{
@@ -54,4 +55,10 @@ func MakeHandler() *RouterHandler {
 
 	}
 	return rh
+}
+
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+	}
 }
