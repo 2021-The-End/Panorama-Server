@@ -12,5 +12,5 @@ func main() {
 
 	log.Print("Start App")
 
-	rh.Hh.Run("127.0.0.1:" + port)
+	rh.Hh.Run(":" + port)
 }
