@@ -155,9 +155,11 @@ func (p *postgreHandler) UploadPost(Projectcon *Projectcon) error {
 	return nil
 }
 
-func (p *postgreHandler) ModifyPost(ProjectCon *JSONProjectCon) error {
+func (p *postgreHandler) ModifyPost(Projectcon *JSONProjectCon) error {
 	log.Print("call model/ModifyPost")
-	if err := p.ormdb.Model(&ProjectCon).Where("id = ?", ProjectCon.ID).Updates(&ProjectCon).Error; err != nil {
+	Projectcon.CreatedAt = time.Now()
+	Projectcon.UpdatedAt = time.Now()
+	if err := p.ormdb.Model(&Projectcon).Where("id = ?", Projectcon.ID).Updates(&Projectcon).Error; err != nil {
 		return err
 	}
 	return nil
