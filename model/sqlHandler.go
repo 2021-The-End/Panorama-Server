@@ -21,9 +21,9 @@ type postgreHandler struct {
 	ormdb *gorm.DB
 }
 
-var dsn = fmt.Sprintf("host=%s user=%s "+
+var dsn = fmt.Sprintf("host=%s port=%s user=%s "+
 	"password=%s dbname=%s sslmode=disable",
-	info.DBHost, info.User, info.Password, info.Dbname)
+	info.DBHost, info.DBPort, info.User, info.Password, info.Dbname)
 
 func NewPostgreHandler() DBHandler {
 	sqldb, err := sql.Open("postgres", dsn)
