@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"io"
+	"os"
+	"panorama/server/info"
 	"panorama/server/model"
 
 	"github.com/gin-gonic/gin"
@@ -13,17 +16,24 @@ type RouterHandler struct {
 }
 
 var client = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
+	Addr:     info.RedisHost + ":" + info.RedisPort,
 	Password: "",
 	DB:       0,
 })
 
 func MakeHandler() *RouterHandler {
 	r := gin.Default()
+
+	gin.DisableConsoleColor()
+
+	f, _ := os.Create("server.log")
+	gin.DefaultWriter = io.MultiWriter(f)
+
 	rh := &RouterHandler{
 		Hh: r,
 		db: model.NewDBHandler(),
 	}
+	r.Use(CORSMiddleware())
 
 	v1 := r.Group("/api/v1")
 	{
@@ -53,4 +63,10 @@ func MakeHandler() *RouterHandler {
 
 	}
 	return rh
+}
+
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+	}
 }

@@ -134,7 +134,7 @@ func (rh *RouterHandler) signupHandler(c *gin.Context) {
 
 func (rh *RouterHandler) signoutHandler(c *gin.Context) {
 	utils.ClearSession(c.Writer)
-	c.Redirect(302, "/")
+	httputil.NewRedirect(c, http.StatusTemporaryRedirect, "/")
 }
 
 // uploadImg godoc

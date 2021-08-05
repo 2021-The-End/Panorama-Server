@@ -10,10 +10,14 @@ type HTTPError struct {
 }
 
 // NewError example
-func NewError(ctx *gin.Context, status int, err error) {
+func NewError(c *gin.Context, status int, err error) {
 	er := HTTPError{
 		Code:    status,
 		Message: err.Error(),
 	}
-	ctx.JSON(status, er)
+	c.JSON(status, er)
+}
+
+func NewRedirect(c *gin.Context, status int, locate string) {
+	c.Redirect(status, locate)
 }
