@@ -10,16 +10,25 @@ import (
 
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type Claims struct {
+	UserId int
+	jwt.StandardClaims
+}
+
+var expiration = 15 * time.Minute
+
+var JwtKey = []byte(os.Getenv("jwtKey"))
 
 type Utils interface {
 	EncrptPasswd(userpw string) (string, error)
 	CompareHash(hashpw, userpw string) bool
-	GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error
+	GenerateToken(username string, client *redis.Client, c *http.ResponseWriter) error
 	ThrowErr(c *gin.Context, statuscode int, err error)
 	Validation(req *http.Request, client *redis.Client) (string, error)
 	UploadFile(c *gin.Context, response string) error
@@ -27,7 +36,7 @@ type Utils interface {
 
 func ClearSession(c http.ResponseWriter) {
 	cookie := &http.Cookie{
-		Name:   "session",
+		Name:   "session_id",
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
@@ -53,25 +62,9 @@ func CompareHash(hashpw, userpw string) bool {
 
 }
 
-func GenerateSessionCookie(username string, client *redis.Client, c http.ResponseWriter) error {
-	SessionKey := uuid.New().String()
-	// Set the token in the cache, along with the user whom it represents
-	// The token has an expiry time of 120 seconds
-	log.Println(username)
-
-	err := client.Set(SessionKey, username, 1800*time.Second).Err()
-
-	if err != nil {
-		return err
-	}
-
-	http.SetCookie(c, &http.Cookie{
-		Name:    "session_id",
-		Value:   SessionKey,
-		Expires: time.Now().Add(60 * time.Minute),
-		Path:    "/",
-	})
-	return nil
+func GenerateToken(username string, client *redis.Client, c *http.ResponseWriter) error {
+	expiration := time.Now().Add(expiration)
+	claim := &Claim
 }
 
 //if result is true, create cookie
