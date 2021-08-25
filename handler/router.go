@@ -26,13 +26,13 @@ func MakeHandler() *RouterHandler {
 
 	gin.DisableConsoleColor()
 
-	f, _ := os.Create("server.log")
-	gin.DefaultWriter = io.MultiWriter(f)
-
 	rh := &RouterHandler{
 		Hh: r,
 		db: model.NewDBHandler(),
 	}
+	f, _ := os.Create("server.log")
+	gin.DefaultWriter = io.MultiWriter(f)
+
 	r.Use(CORSMiddleware())
 
 	v1 := r.Group("/api/v1")
@@ -67,6 +67,15 @@ func MakeHandler() *RouterHandler {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, Origin")
+		c.Header("Access-Control-Allow-Methods", "POST,GET,DELETE")
+		c.Header("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
 	}
 }

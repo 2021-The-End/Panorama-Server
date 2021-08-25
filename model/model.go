@@ -33,7 +33,7 @@ type JSONProjectCon struct {
 	Contents string   `json:"contents"`
 	Imgpaths []string `json:"imgpaths"`
 }
-type Projectcon struct {
+type Project struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
@@ -55,8 +55,8 @@ type DBHandler interface {
 	AddUser(*User) error
 	RemoveUser(string) error
 
-	UploadPost(*Projectcon) error
-	GetbyIdPost(postid int) (*Projectcon, error)
+	UploadPost(*Project) error
+	GetbyIdPost(postid int) (*Project, error)
 	ModifyPost(ProjectCon *JSONProjectCon) error
 	GetPost() (*[]ProjectSum, error)
 

@@ -23,7 +23,7 @@ var err error
 // @Router /user/signin [post]
 func (rh *RouterHandler) signinHandler(c *gin.Context) {
 
-	havcookie, err := utils.SigninValidation(c.Request, client)
+	havcookie, err := utils.InitValidation(c.Request, client)
 	if err != nil {
 		httputil.NewError(c, http.StatusInternalServerError, err)
 		return
@@ -58,18 +58,27 @@ func (rh *RouterHandler) signinHandler(c *gin.Context) {
 			httputil.NewError(c, http.StatusUnauthorized, err)
 			return
 		}
-		var httpwriter http.ResponseWriter = c.Writer
 
-		err = utils.GenerateSessionCookie(user.Username, client, httpwriter)
+		token, err := utils.GenerateToken(user.Username)
 
 		if err != nil {
 			//If err occurs in generating sessioncookie, return ISE
 			httputil.NewError(c, http.StatusInternalServerError, err)
 			return
 		}
+		err = utils.CreateAuth(user.Username, token, client)
+		if err != nil {
+			//If err occurs in saving sessioncookie, return ISE
+			httputil.NewError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		tokens := map[string]string{
+			"access_token":  token.AccessToken,
+			"refresh_token": token.RefreshToken,
+		}
 		//Signin successfully
-		err = errors.New("login successfully")
-		httputil.NewError(c, http.StatusOK, err)
+		c.JSON(http.StatusOK, tokens)
 	} else {
 		err = errors.New("already have cookie")
 		httputil.NewError(c, http.StatusPartialContent, err)
@@ -189,7 +198,7 @@ func (rh *RouterHandler) deleteImgHandler(c *gin.Context) {
 // @Produce  json
 // @Router /post [post]
 func (rh *RouterHandler) upLoadProjectHandler(c *gin.Context) {
-	var project model.Projectcon
+	var project model.Project
 
 	response, err := utils.Validation(c.Request, client)
 	if response == "" {
