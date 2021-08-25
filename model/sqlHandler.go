@@ -112,8 +112,8 @@ func (p *postgreHandler) RemoveUser(username string) error {
 	return nil
 }
 
-func (p *postgreHandler) GetbyIdPost(projectid int) (*Projectcon, error) {
-	Projectcon := &Projectcon{}
+func (p *postgreHandler) GetbyIdPost(projectid int) (*Project, error) {
+	Projectcon := &Project{}
 	var img []string
 	var cre []string
 	selImgQuery := info.SelImgpathQuery
@@ -140,7 +140,7 @@ func (p *postgreHandler) GetbyIdPost(projectid int) (*Projectcon, error) {
 	return Projectcon, nil
 }
 
-func (p *postgreHandler) UploadPost(Projectcon *Projectcon) error {
+func (p *postgreHandler) UploadPost(Projectcon *Project) error {
 	log.Print("call model/UploadPost")
 	Projectcon.CreatedAt = time.Now()
 	Projectcon.UpdatedAt = time.Now()
