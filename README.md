@@ -1,4 +1,3 @@
-프로젝트 게시웹인 Panorama의 API 서버를 개발한 레포지토리입니다.
 # Backend
 
 # Panorama-Server
